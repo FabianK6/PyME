@@ -25,7 +25,7 @@ gewählten Schraube herausgesucht werden. \n
 Danach können die Sicherheiten und das Anzugsdrehmoment der Schraube ermittelt werden sowie ein Spannungsschaubild gezeichnet werden.
 >>> connection.calculation(...) \n
 """
-
+from materials import Solid
 import numpy as np
 
 _SCREWCLASSES_ = np.array(["4.6", "8.8", "10.9", "12.9"])
@@ -50,6 +50,12 @@ _SCREWTABLE_ = np.array([
     [134700, 373000, 531000, 621000],
     [158200, 438000, 623000, 729000],
 ])
+
+class WorkPiece(object):
+    def __init__(self, thickness: float|int, material: Solid):
+        self.thickness = thickness
+        self.material = material
+
 
 class Screw(object):
     def __init__(self,
@@ -105,6 +111,7 @@ class Screw(object):
         self.strainCrossSection = (self.flankDiameter + self.coreDiameter)**2 * np.pi / 16
         self.strainDiameter = (self.flankDiameter + self.coreDiameter) / 2
         self.pitchAngle = np.arctan(self.pitch / (self. flankDiameter * np.pi))
+        self.toleratedDynamicStress = 0.85 * (150 / self.nominalDiameter + 45)
 
     def provisorial_dimension(
             self, screwForce,
@@ -136,26 +143,26 @@ class Screw(object):
 class ScrewConnection(object):
     def __init__(self,
         screw: Screw,
-        clamping_piece: list,
-        threaded_piece: list,
-        forceapplication: float,
-        staticforce: float,
-        appliedforce: float,
-        dynamicForceAmplitude: float,
-        fasteningstyle: float,
-        threadfriction: float,
-        piecefriction: float,
-        safetyfactor: float,
+        clamping_piece: WorkPiece,
+        threaded_piece: WorkPiece,
+        outerDiameter: float|int,
+        forceapplication: float|int,
+        staticforce: float|int,
+        appliedforce: float|int,
+        dynamicForceAmplitude: float|int,
+        fasteningstyle: float|int,
+        threadfriction: float|int,
+        piecefriction: float|int,
+        safetyfactor: float|int,
     ):
         """
         Connection between a Screw, a threaded Piece and a clamped piece.
         Calculates the needed Torque to reach the allowed Stress within the bolt.
-        Useful for fast calculations with small screws (< M10)
 
         Args:
             screw (Screw): Screw-Object
-            clamping_piece (WorkPiece): WorkPiece-Object (clamped between Screw and threaded Piece)
-            threaded_piece (ThreadedPiece): _description_
+            clamping_piece (WorkPiece): clamped piece
+            threaded_piece (WorkPiece): threaded piece or nut
             forceapplication (float): takes the Setup pieces into account (n)
             fasteningforce (float): F_V
             appliedforce (float): F_B
@@ -168,6 +175,7 @@ class ScrewConnection(object):
         self.screw = screw
         self.clamping_piece = clamping_piece
         self.threaded_piece = threaded_piece
+        self.outerDiameter = outerDiameter
         self.forceapplication = forceapplication
         self.staticforce = staticforce
         self.appliedforce = appliedforce
@@ -178,6 +186,7 @@ class ScrewConnection(object):
         self.safetyfactor = safetyfactor
 
     def precalculation(self) -> tuple:
+        bore_diameter = (self.screw.nominalDiameter + 1)
         ### Calculating elongation of screw ###
         if self.screw.head.lower() == "hex":
             l_ko = 0.5 * self.screw.nominalDiameter
@@ -194,31 +203,37 @@ class ScrewConnection(object):
         delta_s = 1 / self.screw.young * a + b
 
         ### Calculation of elongation of Pieces ###
-        logic1 = self.threaded_piece.head_diameter <= self.clamping_piece.outer_dimension
-        logic2 = self.clamping_piece.outer_dimension <= self.threaded_piece.head_diameter + self.clamping_piece.thickness
-        logic3 = self.clamping_piece.outer_dimension < self.clamping_piece.outer_dimension
+        logic1 = self.screw.headDiameter <= self.outerDiameter
+        logic2 = self.outerDiameter <= self.screw.headDiameter + self.clamping_piece.thickness
+        logic3 = self.outerDiameter < self.outerDiameter
         if logic1 or logic2:
-            s1 = (self.threaded_piece.head_diameter ** 2 - self.clamping_piece.bore_diameter ** 2)
-            s2 = (self.clamping_piece.outer_dimension - self.threaded_piece.head_diameter)
+            s1 = (self.screw.headDiameter ** 2 - bore_diameter ** 2)
+            s2 = (self.outerDiameter - self.screw.headDiameter)
             x = (
-                            self.clamping_piece.thickness * self.threaded_piece.head_diameter / self.clamping_piece.outer_dimension ** 2) ** (
+                            self.clamping_piece.thickness * self.screw.headDiameter / self.outerDiameter ** 2) ** (
                             1 / 3)
-            A_ers = np.pi / 4 * s1 + np.pi / 8 * self.threaded_piece.head_diameter * s2 * ((x + 1) ** 2 - 1)
+            A_ers = np.pi / 4 * s1 + np.pi / 8 * self.screw.headDiameter * s2 * ((x + 1) ** 2 - 1)
         elif logic3:
-            A_ers = np.pi * (self.clamping_piece.outer_dimension ** 2 - self.clamping_piece.bore_diameter ** 2) / 4
-        delta_t = self.clamping_piece.thickness / (A_ers * self.threaded_piece.material.young)
-
+            A_ers = np.pi * (self.outerDiameter ** 2 - bore_diameter ** 2) / 4
+        try:
+            delta_t = self.clamping_piece.thickness / (A_ers * self.threaded_piece.material.young)
+        except Exception:
+            delta_t = 0
         ### Ermitteln der benötigten Schraube
         compressionSetValue = 3.29 * (self.clamping_piece.thickness / self.screw.nominalDiameter) ** 0.34 * 10 ** (-3)
         powerfactor = self.forceapplication * delta_t / (delta_s + delta_t)
         clampingforce = self.staticforce - self.appliedforce * (1 - powerfactor)
         stickforce = compressionSetValue / (delta_s + delta_t)
         neededAssemblyForce = self.fasteningstyle * (clampingforce + self.appliedforce * (1 - powerfactor) + stickforce)
-        ix, iy = np.where(neededAssemblyForce >= _SCREWTABLE_)
-        screwTypes = _SCREWSIZES_[iy]
-        screwClasses = _SCREWCLASSES_[ix]
-        assemblyForces = _SCREWTABLE_[ix, iy]
-        return powerfactor, clampingforce, stickforce, compressionSetValue, delta_s, delta_t, screwTypes, screwClasses, assemblyForces
+
+        mask = _SCREWTABLE_ >= neededAssemblyForce
+        rows, cols = np.where(mask)
+
+        pairs = [
+            f"{_SCREWSIZES_[r]} x {_PITCHTABLE_[r]} - {_SCREWCLASSES_[c]}, FS = {_SCREWTABLE_[r, c]} N"
+            for r, c in zip(rows, cols)
+        ]
+        return powerfactor, clampingforce, stickforce, neededAssemblyForce, compressionSetValue, delta_s, delta_t, pairs
 
     def calculation(
             self, powerfactor, clampingforce, stickforce, assemblyforce, compressionSetValue, delta_s, delta_t
@@ -265,7 +280,7 @@ class ScrewConnection(object):
         self.threadtorquep = self.assemblyforce * self.screw.strainDiameter / 2 * np.tan(self.screw.pitchAngle + rho)
         self.threadtorquen = self.assemblyforce * self.screw.strainDiameter / 2 * np.tan(self.screw.pitchAngle - rho)
         self.fasteningtorque = self.assemblyforce * (self.screw.strainDiameter / 2 * np.tan(
-            self.screw.pitchAngle + rho) + self.piecefriction * self.threaded_piece.head_diameter)
+            self.screw.pitchAngle + rho) + self.piecefriction * self.screw.headDiameter)
 
         ### Spannungen ###
         Wt = np.pi * self.screw.strainDiameter ** 3 / 12
@@ -285,10 +300,10 @@ class ScrewConnection(object):
         self.dynamicSafety = self.screw.toleratedDynamicStress / self.dynamicStress
         return
 
-    def complex_markdown(self):
+def complex_markdown(self):
         return (
             " ### Schraubenverbindung " " \n " " *** " " \n "
-            f" Empfohlene Schraube: {self.screw.thread_type + str(self.screw.nominal_diameter)} x {self.screw.shaft_length + self.screw.thread_length} - {self.screw.toughness_class}"
+            f" Empfohlene Schraube: {self.screw.threadType + str(self.screw.nominalDiameter)} x {self.screw.shaftLength + self.screw.threadLength} - {self.screw.toughnessClass}"
             r" Für Ergebnisse mit zwei Angaben gilt: $ [tan(\alpha + \rho), tan(\alpha - \rho)] $ weil dort das Gewindemoment in die Berechnung einfliesst. " " \n "
             " #### Kräfte " " \n "
             r" Klemmkraft der Schraube: $ F_{Kl} = F_v - F_B (1 - \Theta) = " f" {int(self.clampingforce)} N " " $ " " \n "
