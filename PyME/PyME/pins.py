@@ -79,7 +79,7 @@ class PinConnection(object):
             pin (Pin): Pin-Objekt
             num_of_pins (int): Anzahl Pins in der Verbindung n
             part1 (list): erstes Werkstück [Dicke t_1, Re_1]
-            part2 (list): zweites Werkstück [Dicke t_2, Re2]
+            part2 (list): zweites Werkstück [Dicke t_2, Re_2]
         """
         self.pin = pin
         self.num_of_pins = num_of_pins

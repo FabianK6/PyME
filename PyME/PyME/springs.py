@@ -63,7 +63,7 @@ class WireSpring(Spring):
             k1 = 0.155
         else:
             k1 = 0.175
-        
+        assert any([self.outerDiameter > 0, self.innerDiameter > 0]), "define either outer- or inner spring-diameter."
         if self.outerDiameter > 0:
             self.wireDiameter = k1 * (self.Fmax * self.outerDiameter)**(1/3)
             self.innerDiameter = self.outerDiameter - 2 * self.wireDiameter
@@ -72,6 +72,7 @@ class WireSpring(Spring):
             self.wireDiameter = k1 * (self.Fmax * self.innerDiameter)**(1/3) + k2
             self.outerDiameter = self.innerDiameter + 2 * self.wireDiameter
         self.nominalDiameter = (self.outerDiameter + self.innerDiameter) / 2
+        assert self.nominalDiameter > 0, "Given Inner Diameter too small. Spring cannot sustain Fmax."
         return self.wireDiameter
     
     def calc_spring(self, truewireDiameter: float, maxWireDiameter: float, k: float):
