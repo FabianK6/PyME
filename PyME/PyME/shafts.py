@@ -14,9 +14,9 @@ from .materials import Solid
 class SlotStone(object):
     def __init__(
         self, 
-        width: float, 
-        length: float, 
-        height: float, 
+        width: float|int,
+        length: float|int,
+        height: float|int,
         form: str,
         material: Solid
     ):
@@ -30,21 +30,28 @@ class SlotStone(object):
 
 class Shaft(object):
     def __init__(
-        self, length: float, diameter: float, 
-        K_A: float = 1.5, torque: float = 0, 
-        setOfNodes: list = [], material: Solid = None,
+        self,
+        length: float|int,
+        diameter: float|int,
+        K_A: float|int = 1.5,
+        torque: float|int = 0,
+        setOfNodes: list = [],
+        material: Solid = None,
     ):
         """
         Shaft-Object used for stress-strain analysis
-        
-        For Nodes: use either boundary, mid, loose, rigid, glider or load as type
-        you can apply forces on each type.
+
         setOfNodes should look like this:
-        >>> setOfNodes = [
-        >>>     [0, "bearing", I, [Qx, Fy, Mb]],
-        >>>     ...,
-        >>>     [xi, "load", I, [Qxi, Fyxi, Mbxi]]    
-        >>> ]
+        setOfNodes = [\n
+        [0, btype, I, [Qx, Fy, Mb]], \n
+        ..., \n
+        [xi, btype, I, [Qxi, Fyxi, Mbxi]] \n
+        ] \n
+        btype can be one of the following if it is a bearing: "boundary", "mid", "rigid", "loose", "glider" \n
+        and if btype is a pure load: "load" \n
+        Qx is a distributed load and can contain "x" as a symbol (symoy.abc.x) [N/mm]. \n
+        Fy is a point load [N]. \n
+        Mb is a bending torque [Nmm].
 
         Args:
             length (float): length of the shaft [mm]
@@ -61,10 +68,22 @@ class Shaft(object):
         self.torque = torque
         self.material = material
         
-    def bendingForces(
+    def calculate_bending(
         self, 
-        tol = 1e-26
+        tol: float = 1e-26
     ):
+        """
+        Calculate Q(x), M(x), w(x) and W(x) where: \n
+        Q(x) is the load acting on the shaft at position x \n
+        M(x) is the bending moment at position x \n
+        w(x) is the tilt of the axis at position x \n
+        W(x) is the displacement of the axis at position x \n
+
+        Args:
+            tol (float): tolerance between x and xi. needed for calculating the position of the max bending moment.
+        :returns: [[arrays Qx, Mx, wx, Wx], [callables Q(x), M(x), w(x), W(x)],
+
+        """
         bmid = []
         for i, node in enumerate(self.setOfNodes):
             nmid = bd.SymNode(
