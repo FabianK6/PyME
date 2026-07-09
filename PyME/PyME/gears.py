@@ -8,6 +8,36 @@ Created on Wed May 20 23:02:37 2026
 
 import numpy as np
 
+_QUALITYFACTOR_STRAIGHT_ = {
+    6: {1: 9.6, 2: 0.0193},
+    7: {1: 15.3, 2: 0.0193},
+    8: {1: 24.5, 2: 0.0193},
+    9: {1: 32.5, 2: 0.0193},
+    10: {1: 53.6, 2: 0.0193},
+    11: {1: 76.6, 2: 0.0193},
+    12: {1: 122.5, 2: 0.0193}
+}
+
+_QUALITYFACTOR_TILTED_ = {
+    6: {1: 8.5, 2: 0.0087},
+    7: {1: 13.6, 2: 0.0087},
+    8: {1: 21.8, 2: 0.0087},
+    9: {1: 30.7, 2: 0.0087},
+    10: {1: 47.7, 2: 0.0087},
+    11: {1: 68.2, 2: 0.0087},
+    12: {1: 109.1, 2: 0.0087}
+}
+
+_FOREHEADFACTORS_ = {
+    6: {1: 1.0, 2: 1.0},
+    7: {1: 1.0, 2: 1.1},
+    8: {1: 1.1, 2: 1.2},
+    9: {1: 1.2, 2: 1.4},
+    10: {1: 1.22, 2: 1.42},
+    11: {1: 1.24, 2: 1.44},
+    12: {1: 1.26, 2: 1.46}
+}
+
 class Gear(object):
     def __init__(
         self, 
@@ -16,11 +46,10 @@ class Gear(object):
         width: float, 
         toothWidth: float,
         distanceGearToshaftMidPoint: float, 
-        toothingQuality: float, 
+        toothingQuality: int,
         Kdot: float, 
         shaft=None,
-        alpha = 20, 
-        beta = 0
+        alpha = 20
     ):
         """
         Gear object.
@@ -43,7 +72,6 @@ class Gear(object):
             teethHeight: h
         """
         self.teeth = teeth
-        self.beta = beta / 180 * np.pi
         self.alpha = alpha / 180 * np.pi
         self.module = module
         self.toothWidth = toothWidth
@@ -52,65 +80,11 @@ class Gear(object):
         self.toothingQuality = toothingQuality
         self.Kdot = Kdot
         self.shaft = shaft
-        qualityfactor = {
-            6: {1: 9.6, 2: 0.0193}, 
-            7: {1: 15.3, 2: 0.0193}, 
-            8: {1: 24.5, 2: 0.0193},
-            9: {1: 32.5, 2: 0.0193},
-            10: {1: 53.6, 2: 0.0193},
-            11: {1: 76.6, 2: 0.0193},
-            12: {1: 122.5, 2: 0.0193}
-        }
-        self.K1 = qualityfactor.get(toothingQuality).get(1)
-        self.K2 = qualityfactor.get(toothingQuality).get(2)
-        self.divisionOfIntervention = np.pi * module * np.cos(self.alpha)
-        self.partCircleDiameter = teeth * module / np.cos(self.beta)
-        self.baseCircleDiameter = teeth * module * np.cos(self.alpha) / np.cos(self.beta)
-        self.headCircleDiameter = module * (teeth + 2)
-        self.feetCircleDiameter = module * (teeth - 2.5)
-        self.teethFeetHeight = module * 1.25
-        self.teethHeight = module * 2.25
-        self.jump = self.width * np.tan(self.beta)
-        self.jumpOverlap = self.width * np.sin(self.beta) / (np.pi * self.module)
-        
         self.qH = {
             6: 1.32, 7: 1.85, 8: 2.59, 
             9: 4.01, 10: 6.22, 11: 9.63, 
             12: 14.9
         }.get(toothingQuality)
-        
-        foreheadfactors = {
-            6: {1: 1.0, 2: 1.0}, 
-            7: {1: 1.0, 2: 1.1}, 
-            8: {1: 1.1, 2: 1.2},
-            9: {1: 1.2, 2: 1.4},
-            10: {1: 1.22, 2: 1.42},
-            11: {1: 1.24, 2: 1.44},
-            12: {1: 1.26, 2: 1.46}
-        }
-        self.K_Fa = foreheadfactors.get(self.toothingQuality).get(1)
-        self.K_Ha = foreheadfactors.get(self.toothingQuality).get(1)
-        
-        if beta != 0:
-            qualityfactor = {
-                6: {1: 8.5, 2: 0.0087}, 
-                7: {1: 13.6, 2: 0.0087}, 
-                8: {1: 21.8, 2: 0.0087},
-                9: {1: 30.7, 2: 0.0087},
-                10: {1: 47.7, 2: 0.0087},
-                11: {1: 68.2, 2: 0.0087},
-                12: {1: 109.1, 2: 0.0087}
-            }
-            self.K1 = qualityfactor.get(toothingQuality).get(1)
-            self.K2 = qualityfactor.get(toothingQuality).get(2)
-            self.frontModule = self.module / np.cos(self.beta)
-            self.frontalpha = np.atan(np.tan(self.alpha) / np.cos(self.beta))
-            self.baseCircleDiameter = self.partCircleDiameter * np.cos(self.frontalpha)
-            self.headCircleDiameter = self.module * (2 + teeth / np.cos(self.alpha))
-            self.feetCircleDiameter = self.partCircleDiameter - 2.5 * module
-            self.divisionOfIntervention = np.pi * self.frontModule * np.cos(self.alpha)
-            self.K_Fa = foreheadfactors.get(self.toothingQuality).get(2)
-            self.K_Ha = foreheadfactors.get(self.toothingQuality).get(2)
     
     def set_nominalCircumferalForce(self, torque: float):
         self.nominalCircumferalForce = 2 * torque / self.partCircleDiameter
@@ -187,6 +161,64 @@ class Gear(object):
         Y_beta = 1 - epsilon_beta * self.beta / (np.pi*2/3)
         self.sigma_F = self.nominalCircumferalForce / (self.toothWidth * self.module) * Y_Fa * Y_Sa * Y_epsilon * Y_beta * self.K_Fges
         return self.sigma_F
+
+
+class StraightGear(Gear):
+    def __init__(
+        self,
+        teeth: float,
+        module: float,
+        width: float,
+        toothWidth: float,
+        distanceGearToshaftMidPoint: float,
+        toothingQuality: int,
+        Kdot: float,
+        shaft=None,
+        alpha=20,
+    ):
+        super().__init__(teeth, module, width, toothWidth,
+                         distanceGearToshaftMidPoint, toothingQuality, Kdot, shaft, alpha)
+        self.K1 = qualityfactor.get(toothingQuality).get(1)
+        self.K2 = qualityfactor.get(toothingQuality).get(2)
+        self.divisionOfIntervention = np.pi * module * np.cos(self.alpha)
+        self.partCircleDiameter = teeth * module / np.cos(self.beta)
+        self.baseCircleDiameter = teeth * module * np.cos(self.alpha) / np.cos(self.beta)
+        self.headCircleDiameter = module * (teeth + 2)
+        self.feetCircleDiameter = module * (teeth - 2.5)
+        self.teethFeetHeight = module * 1.25
+        self.teethHeight = module * 2.25
+        self.jump = self.width * np.tan(self.beta)
+        self.jumpOverlap = self.width * np.sin(self.beta) / (np.pi * self.module)
+        self.K_Fa = foreheadfactors.get(self.toothingQuality).get(1)
+        self.K_Ha = foreheadfactors.get(self.toothingQuality).get(1)
+
+class TiltedGear(Gear):
+    def __init__(
+            self,
+            teeth: float,
+            module: float,
+            width: float,
+            toothWidth: float,
+            distanceGearToshaftMidPoint: float,
+            toothingQuality: int,
+            Kdot: float,
+            beta: int | float,
+            shaft=None,
+            alpha=20
+    ):
+        super().__init__(teeth, module, width, toothWidth,
+                         distanceGearToshaftMidPoint, toothingQuality, Kdot, shaft, alpha)
+        self.beta = beta / 180 * np.pi
+        self.K1 = qualityfactor.get(toothingQuality).get(1)
+        self.K2 = qualityfactor.get(toothingQuality).get(2)
+        self.frontModule = self.module / np.cos(self.beta)
+        self.frontalpha = np.atan(np.tan(self.alpha) / np.cos(self.beta))
+        self.baseCircleDiameter = self.partCircleDiameter * np.cos(self.frontalpha)
+        self.headCircleDiameter = self.module * (2 + teeth / np.cos(self.alpha))
+        self.feetCircleDiameter = self.partCircleDiameter - 2.5 * module
+        self.divisionOfIntervention = np.pi * self.frontModule * np.cos(self.alpha)
+        self.K_Fa = foreheadfactors.get(self.toothingQuality).get(2)
+        self.K_Ha = foreheadfactors.get(self.toothingQuality).get(2)
     
     
 class Gearbox(object):

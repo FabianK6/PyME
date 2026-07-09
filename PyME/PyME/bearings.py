@@ -10,12 +10,12 @@ import numpy as np
 
 class Bearing(object):
     def __init__(self,
-        innerDiameter: float,
-        outerDiameter: float,
-        axialForce: float|np.ndarray,
-        radialForce: float|np.ndarray,
-        frequency: float|np.ndarray
-    ):
+                 innerDiameter: float,
+                 outerDiameter: float,
+                 axialForce: float | np.ndarray,
+                 radialForce: float | np.ndarray,
+                 frequency: float | np.ndarray
+                 ) -> None:
         """
         This Class is a Baseclass und does not need to be invoced by the user.
         Use RollerBearing or SlideBearing instead.
