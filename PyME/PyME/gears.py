@@ -178,19 +178,17 @@ class StraightGear(Gear):
     ):
         super().__init__(teeth, module, width, toothWidth,
                          distanceGearToshaftMidPoint, toothingQuality, Kdot, shaft, alpha)
-        self.K1 = qualityfactor.get(toothingQuality).get(1)
-        self.K2 = qualityfactor.get(toothingQuality).get(2)
+        self.K1 = _QUALITYFACTOR_STRAIGHT_.get(toothingQuality).get(1)
+        self.K2 = _QUALITYFACTOR_STRAIGHT_.get(toothingQuality).get(2)
         self.divisionOfIntervention = np.pi * module * np.cos(self.alpha)
-        self.partCircleDiameter = teeth * module / np.cos(self.beta)
-        self.baseCircleDiameter = teeth * module * np.cos(self.alpha) / np.cos(self.beta)
+        self.partCircleDiameter = teeth * module
+        self.baseCircleDiameter = teeth * module * np.cos(self.alpha)
         self.headCircleDiameter = module * (teeth + 2)
         self.feetCircleDiameter = module * (teeth - 2.5)
         self.teethFeetHeight = module * 1.25
         self.teethHeight = module * 2.25
-        self.jump = self.width * np.tan(self.beta)
-        self.jumpOverlap = self.width * np.sin(self.beta) / (np.pi * self.module)
-        self.K_Fa = foreheadfactors.get(self.toothingQuality).get(1)
-        self.K_Ha = foreheadfactors.get(self.toothingQuality).get(1)
+        self.K_Fa = _FOREHEADFACTORS_.get(self.toothingQuality).get(1)
+        self.K_Ha = _FOREHEADFACTORS_.get(self.toothingQuality).get(1)
 
 class TiltedGear(Gear):
     def __init__(
@@ -209,16 +207,19 @@ class TiltedGear(Gear):
         super().__init__(teeth, module, width, toothWidth,
                          distanceGearToshaftMidPoint, toothingQuality, Kdot, shaft, alpha)
         self.beta = beta / 180 * np.pi
-        self.K1 = qualityfactor.get(toothingQuality).get(1)
-        self.K2 = qualityfactor.get(toothingQuality).get(2)
+        self.K1 = _QUALITYFACTOR_TILTED_.get(toothingQuality).get(1)
+        self.K2 = _QUALITYFACTOR_TILTED_.get(toothingQuality).get(2)
         self.frontModule = self.module / np.cos(self.beta)
         self.frontalpha = np.atan(np.tan(self.alpha) / np.cos(self.beta))
+        self.partCircleDiameter = teeth * module / np.cos(self.beta)
         self.baseCircleDiameter = self.partCircleDiameter * np.cos(self.frontalpha)
         self.headCircleDiameter = self.module * (2 + teeth / np.cos(self.alpha))
         self.feetCircleDiameter = self.partCircleDiameter - 2.5 * module
         self.divisionOfIntervention = np.pi * self.frontModule * np.cos(self.alpha)
-        self.K_Fa = foreheadfactors.get(self.toothingQuality).get(2)
-        self.K_Ha = foreheadfactors.get(self.toothingQuality).get(2)
+        self.jump = self.width * np.tan(self.beta)
+        self.jumpOverlap = self.width * np.sin(self.beta) / (np.pi * self.module)
+        self.K_Fa = _FOREHEADFACTORS_.get(self.toothingQuality).get(2)
+        self.K_Ha = _FOREHEADFACTORS_.get(self.toothingQuality).get(2)
     
     
 class Gearbox(object):
