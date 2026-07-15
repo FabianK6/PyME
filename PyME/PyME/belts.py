@@ -14,7 +14,7 @@ _TOOTHBELT_PARAMS_ = np.array([
 _TOOTHBELT_FORCE_ = np.array([
     [4, 6, 10, 16, 25, 32, 50, 75, 100, 150],
     [39, 65, 117, 195, 312, 403, 0, 0, 0, 0],
-    [0, 150, 300, 510, 870, 1100, 1800, 2730, 3660],
+    [0, 150, 300, 510, 870, 1100, 1800, 2730, 3660, 0],
     [0, 0, 0, 1200, 2000, 2700, 4300, 6600,  8800, 13400],
     [0, 0, 0, 0, 0, 4750, 7750, 12000, 16000, 24500]
 ])
@@ -52,13 +52,32 @@ class ToothBelt(Belt):
         index = np.where(_TROLLEY_DIAMETER_[0] >= ptn)
         # Durchmesser des treibenden Rads
         d1 = _TROLLEY_DIAMETER_[1, index[0]]
+        d1 = d1[0]
         # Durchmesser des getriebenen Rads
         d2 = d1 * ratio
         super().__init__(torque, num_of_rev, app_factor, d1, d2)
 
+    def reset_trolley_diameter(self, trolley_diameter_drive: float|int, trolley_diameter_load: float|int):
+        """
+        Wähle die Raddurchmesser selber und gib diese in das Objekt ein.
+
+        :param trolley_diameter_drive:
+        :param trolley_diameter_load:
+        :returns: None
+        """
+        self.trolley_diameter_drive = trolley_diameter_drive
+        self.trolley_diameter_load = trolley_diameter_load
+
     def step_1_calc_toothbelt_length(self):
-        v = self.trolley_diameter_drive * np.pi * self.num_of_rev
-        self.tangential_force = self.power / v
+        """
+        Berechne die Riemenlänge und wähle aus RM TB 16 eine passende Länge.
+
+        :returns:
+            e' (float|int): Theoretischer Wellenabstand [mm]
+            Ld' (float|int): Theoretische Riemenlänge [mm]
+        """
+        self.v = self.trolley_diameter_drive/1000 * np.pi * self.num_of_rev
+        self.tangential_force = self.power / self.v
         dm = (self.trolley_diameter_drive + self.trolley_diameter_load) * 0.5
         e_ = (15 + dm + 2 * (self.trolley_diameter_drive + self.trolley_diameter_load)) / 2
         Ld_ = 2 * e_ + np.pi/2 * (self.trolley_diameter_drive + self.trolley_diameter_load) + (self.trolley_diameter_drive + self.trolley_diameter_load)**2 / (4 * e_)
@@ -66,32 +85,79 @@ class ToothBelt(Belt):
 
 
     def step_2_calc_shaft_distance(self, belt_length: float|int):
+        """
+        Berechne den Achsabstand, den Umschlingwinkel am treibenden Rad und den Spannweg des Riemens.
+
+        :param belt_length: (float|int) gewählte Riemenlänge [mm]
+
+        :returns:
+            Wellenabstand e [mm],
+            Umschlingwinkel beta_k [rad],
+            Spannweg x [mm]
+        """
         self.belt_length = belt_length
-        self.e = belt_length / 4 * np.pi / 8 * (self.trolley_diameter_drive + self.trolley_diameter_load)
-        self.e += np.sqrt(belt_length / 4 - np.pi / 8 * (self.trolley_diameter_drive + self.trolley_diameter_load)**2 - (self.trolley_diameter_drive + self.trolley_diameter_load)**2 / 8)
-        self.wrap_angle = np.arccos((self.trolley_diameter_load - self.trolley_diameter_drive) / (2 * e))
+        dsum = self.trolley_diameter_drive + self.trolley_diameter_load
+        a = self.belt_length / 4 - np.pi / 8 * dsum
+        b = np.sqrt((belt_length / 4 - np.pi / 8 * dsum)**2 - dsum**2 / 8)
+        self.e = a + b
+        self.wrap_angle = 2 * np.arccos((self.trolley_diameter_load - self.trolley_diameter_drive) / (2 * self.e))
         self.x = 0.005 * belt_length
         return self.e, self.wrap_angle, self.x
 
     def step_3_calc_module(self):
+        """
+        Berechne das Modul des Riemens.
+
+        :returns
+            Anzahl Zähne im Eingriff ze, Zähne des kleineren Rads zk, Teilung p [mm]
+        """
         zk_ = 12 / np.rad2deg(self.wrap_angle) * 360
         pitch_ = self.trolley_diameter_drive * np.pi / zk_
         self.index = np.where(_TOOTHBELT_PARAMS_[:,0] >= pitch_)[0]
+        if len(self.index) <= 0:
+            self.index = -1
+            print(f"Warnung: theoretisch benötigte Teilung ist grösser als 20: {pitch_}")
         self.belt_params = _TOOTHBELT_PARAMS_[self.index]
-        self.zk = self.trolley_diameter_drive * self.belt_params[0] / np.pi
+        self.zk = self.trolley_diameter_drive / self.belt_params[0] * np.pi
         self.ze = self.zk * np.rad2deg(self.wrap_angle) / 360
         return self.ze, self.zk, self.belt_params[0]
 
     def step_4_calc_beltwidth(self, P_spez: float|int):
+        """
+        Berechne die Riemenbreite.
+
+        :parameter
+            P_spez (float|int): Spezifische übertragbare Leistung des Riemens [kW/mm]
+
+        :returns
+            theoretische Riemenbreite [mm]
+        """
         self.P_spez = P_spez
-        belt_width_ = self.power / (self.zk * self.ze * P_spez)
+        belt_width_ = self.power/1000 / (self.zk * self.ze * P_spez)
         return belt_width_
 
-    def step_5_control_calculation(self, belt_width):
+    def step_5_control_calculation(
+            self,
+            belt_width: float|int,
+            Ft_zul: float|int,
+            num_of_trolleys: int
+        ):
+        """
+        Berechne die Ausnutzung der zulässigen Tangentialkraft des Riemens.
+
+        :parameter
+            belt_width (float|int): gewählte Riemenbreite [mm]
+
+        :returns
+            Sicherheitsfaktor Ft / Ft'
+        """
         self.belt_width = belt_width
-        Ft_zul = _TOOTHBELT_FORCE_[self.index]
-        Ft_range = Ft_zul[np.where(_TOOTHBELT_FORCE_[0] >= self.belt_width)]
-        return Ft_range / self.tangential_force
+        self.Ft_zul = Ft_zul
+        sf1 = self.Ft_zul / self.tangential_force
+        sf2 = self.belt_params[-1] / self.v
+        Fw0 = 1.1 * self.tangential_force
+        fB = self.v * num_of_trolleys / self.belt_length
+        return sf1, sf2, Fw0, fB
 
 
 class FlatBelt(Belt):
