@@ -80,6 +80,14 @@ class ToothBelt(Belt):
             Spannweg x [mm]
         """
         self.belt_length = belt_length
+        self.index = np.where(_TOOTHBELT_PARAMS_[:, 0] >= self.pitch)[0]
+        self.belt_params = _TOOTHBELT_PARAMS_[self.index][0]
+        if self.belt_length < self.belt_params[2]:
+            print(f"Warnung, Riemenlänge kürzer als erlaubt: Riemenlänge festgelegt auf {self.belt_params[2]} mm")
+            self.belt_length = self.belt_params[2]
+        elif self.belt_length > self.belt_params[3]:
+            print(f"Warnung, Riemenlänge länger als erlaubt: Riemenlänge festgelegt auf {self.belt_params[3]} mm")
+            self.belt_length = self.belt_params[3]
         dsum = self.trolley_diameter_drive + self.trolley_diameter_load
         a = self.belt_length / 4 - np.pi / 8 * dsum
         b = np.sqrt((belt_length / 4 - np.pi / 8 * dsum)**2 - dsum**2 / 8)
@@ -96,17 +104,18 @@ class ToothBelt(Belt):
         Berechne das Modul des Riemens.
 
         :returns:
-            Anzahl Zähne im Eingriff ze, Zähne des kleineren Rads zk, Teilung p [mm]
+            Anzahl Zähne im Eingriff ze,
+            Zähne des kleineren Rads zk,
+            erforderlicher Umschlingwinkel damit ze = 12 [grad],
+            erforderliche Übersetzung damit ze = 12
         """
-        self.index = np.where(_TOOTHBELT_PARAMS_[:,0] >= self.pitch)[0]
-        self.belt_params = _TOOTHBELT_PARAMS_[self.index][0]
         self.zk = self.trolley_diameter_drive / self.pitch * np.pi
         self.ze = self.zk * np.rad2deg(self.wrap_angle) / 360
         # theoretisch benötigter Umschlingwinkel für ze = 12
         wrap_a_ = 12 / self.zk * 360
         # theoretisch benötigte Übersetzung für ze = 12
         ratio_ = np.cos(np.deg2rad(wrap_a_) / 2) * 2 * self.belt_length * np.pi / (self.pitch * self.zk) + 1
-        return self.ze, self.zk, self.belt_params[0], wrap_a_, ratio_
+        return self.ze, self.zk, wrap_a_, ratio_
 
     def step_4_calc_beltwidth(self, P_spez: float|int):
         """
