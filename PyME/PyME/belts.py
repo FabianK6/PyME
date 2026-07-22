@@ -19,6 +19,24 @@ _TOOTHBELT_FORCE_ = np.array([
 ])
 _TOOTHBELT_WIDTH_ = np.array([4, 6, 10, 16, 25, 32, 50, 75, 100, 150])
 
+_RUBBER_FLATBELT_PARAMS_ = np.array([
+    [775, 0, 1.25, 4.35, 0.35, 30, 100, 80, 0.5, 100],
+    [1200, 0, 1.25, 4.35, 0.35, 15, 300, 35, 0.5, 100]
+])
+
+_MULTILAYER_FLATBELT_PARAMS_ = np.array([
+    [650, 300, 1.25, 19.5, 0.0165, 100, 200, 90, 0.7, 100],
+    [550, 250, 1.25, 8, 0.0275, 100, 400, 90, 0.6, 100],
+    [550, 250, 1.25, 12, 0.0165, 100, 800, 60, 0.7, 100],
+    [450, 200, 1.25, 9.5, 0.0275, 100, 800, 60, 0.6, 100]
+])
+
+_FLATBELT_WIDTH_ = np.array([
+    20, 25, 32, 40, 50, 63, 71, 80, 90, 100, 112, 125, 140,
+    160, 180, 200, 224, 250, 280, 315, 355, 400, 450,
+    500, 560, 630, 710, 800, 900, 1000, 1120, 1250, 1400
+])
+
 class Belt(object):
     def __init__(
         self,
@@ -91,13 +109,13 @@ class ToothBelt(Belt):
         dsum = self.trolley_diameter_drive + self.trolley_diameter_load
         a = self.belt_length / 4 - np.pi / 8 * dsum
         b = np.sqrt((belt_length / 4 - np.pi / 8 * dsum)**2 - dsum**2 / 8)
-        self.e = a + b
+        self.shaft_distance = a + b
         if not custom_wrap_angle:
-            self.wrap_angle = 2 * np.arccos((self.trolley_diameter_load - self.trolley_diameter_drive) / (2 * self.e))
+            self.wrap_angle = 2 * np.arccos((self.trolley_diameter_load - self.trolley_diameter_drive) / (2 * self.shaft_distance))
         else:
             self.wrap_angle = custom_wrap_angle
         self.x = 0.005 * belt_length
-        return self.e, self.wrap_angle, self.x
+        return self.shaft_distance, self.wrap_angle, self.x
 
     def step_3_calc_module(self):
         """
@@ -164,8 +182,10 @@ class FlatBelt(Belt):
         torque: float|int,
         num_of_rev: float|int,
         ratio: float|int,
-        app_factor: float|int
+        app_factor: float|int,
+        belt_type: str
     ):
+        self.belt_type = belt_type
         # rotationsgeschwindigkeit der Antriebsseite
         self.angular_velocity = num_of_rev / 60 * 2 * np.pi
         # zu übertragende Leistung
@@ -175,8 +195,82 @@ class FlatBelt(Belt):
         index = np.where(_TROLLEY_DIAMETER_[0] >= ptn)
         # Durchmesser des treibenden Rads
         d1 = _TROLLEY_DIAMETER_[1, index[0]]
-        d1 = d1[0]
+        self.trolley_diameter_drive = d1[0]
         # Durchmesser des getriebenen Rads
-        d2 = d1 * ratio
-        pass
+        d2 = self.trolley_diameter_drive * ratio
+        index = np.where(_TROLLEY_DIAMETER_[1] >= d2)
+        d2_ = _TROLLEY_DIAMETER_[1, index[0]]
+        self.trolley_diameter_load = d2_[0]
+        ratio_ = self.trolley_diameter_load / self.trolley_diameter_drive
+        super().__init__(torque, num_of_rev, ratio_, app_factor)
 
+    def step_1_calc_flathbelt_length(self):
+        """
+        Berechne die Riemenlänge und wähle aus RM TB 16 eine passende Länge.
+
+        :returns:
+            e' (float|int): Theoretischer Wellenabstand [mm]
+            Ld' (float|int): Theoretische Riemenlänge [mm]
+        """
+        self.v = self.trolley_diameter_drive/1000 * np.pi * self.num_of_rev/60
+        dm = self.trolley_diameter_drive + self.trolley_diameter_load
+        e_ = (dm * 0.7 + dm / 2) / 2
+        Ld_ = 2 * e_ + np.pi/2 * dm + dm**2 / (4 * e_)
+        return e_, Ld_
+
+    def step_2_calc_shaft_distance(self, belt_length: float|int, custom_wrap_angle: float|int = 0):
+        """
+        Berechne den Achsabstand, den Umschlingwinkel am treibenden Rad und den Spannweg des Riemens.
+
+        :param belt_length: (float|int) gewählte Riemenlänge [mm]
+
+        :returns:
+            Wellenabstand e [mm],
+            Umschlingwinkel beta_k [rad],
+            Spannweg x [mm]
+        """
+        self.belt_length = belt_length
+        dsum = self.trolley_diameter_drive + self.trolley_diameter_load
+        a = self.belt_length / 4 - np.pi / 8 * dsum
+        b = np.sqrt((belt_length / 4 - np.pi / 8 * dsum)**2 - dsum**2 / 8)
+        self.shaft_distance = a + b
+        if not custom_wrap_angle:
+            self.wrap_angle = 2 * np.arccos((self.trolley_diameter_load - self.trolley_diameter_drive) / (2 * self.shaft_distance))
+        else:
+            self.wrap_angle = custom_wrap_angle
+        self.x = 0.03 * belt_length
+        return self.shaft_distance, self.wrap_angle, self.x
+
+    def step_3_calc_beltwidth(self, index: int, Ft_zul: float|int):
+        match self.belt_type.lower():
+            case "rubber":
+                self.belt_params = _RUBBER_FLATBELT_PARAMS_[index]
+            case "multilayer":
+                self.belt_params = _MULTILAYER_FLATBELT_PARAMS_[index]
+        self.friction_coeff = self.belt_params[4]
+        self.m = np.exp(self.friction_coeff * self.wrap_angle)
+        self.kappa = (self.m - 1) / self.m
+        self.k = np.sqrt(self.m ** 2 + 1 - 2 * self.m * np.cos(self.wrap_angle)) / (self.m - 1)
+        self.tangential_force = self.power / self.v
+        b_ = self.tangential_force / Ft_zul
+        self.belt_width = _FLATBELT_WIDTH_[np.where(_FLATBELT_WIDTH_ <= b_)[-1]]
+        return self.belt_width
+
+    def step_4_calc_forces(self, thickness: float|int = 0):
+        if not thickness:
+            self.thickness = self.belt_params[4] * self.belt_width
+        else:
+            self.thickness = thickness
+        As = self.thickness * self.belt_width
+        rho = self.belt_params[2]
+        self.pullforce = As * rho * self.v**2
+        self.shaft_force = self.k * self.tangential_force
+        self.resting_shaft_force = self.shaft_force + self.pullforce
+        return self.pullforce, self.shaft_force, self.resting_shaft_force
+
+    def step_6_calc_stress(self):
+        self.pull_stress = self.tangential_force / (self.kappa * self.thickness * self.belt_width)
+        self.bending_stress = self.belt_params[1] * self.thickness / self.belt_width
+        self.centrifugal_stress = self.belt_params[2] * self.v**2
+        self.total_stress = self.pull_stress + self.bending_stress + self.centrifugal_stress
+        return self.total_stress
