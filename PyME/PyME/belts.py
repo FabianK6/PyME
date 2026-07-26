@@ -146,17 +146,17 @@ class ToothBelt(Belt):
         """
         self.P_spez = P_spez
         belt_width_ = self.power/1000 / (self.zk * self.ze * P_spez)
-        return belt_width_
+        self.index_b = np.where(_TOOTHBELT_WIDTH_ >= belt_width_)
+        self.belt_width = _TOOTHBELT_WIDTH_[index[0]]
+        return self.belt_width
 
     def step_5_control_calculation(
             self,
-            belt_width: float|int,
             num_of_trolleys: int
         ):
         """
         Berechne die Ausnutzung der zulässigen Tangentialkraft des Riemens.
 
-        :param belt_width: (float|int) gewählte Riemenbreite [mm]
         :param num_of_trolleys: (int) Anzahl Rollen inklusive Spannrollen
 
         :returns:
@@ -165,10 +165,8 @@ class ToothBelt(Belt):
             Seitenkraft auf die Welle F_w0 [N]
             Biegefrequenz des Riemens f_B [Hz]
         """
-        self.belt_width = belt_width
         Ftzul = _TOOTHBELT_FORCE_[self.index][0]
-        index_b = np.where(_TOOTHBELT_WIDTH_ <= belt_width)[0]
-        self.Ft_zul = Ftzul[index_b[-1]]
+        self.Ft_zul = Ftzul[self.index_b[-1]]
         sf1 = self.Ft_zul / self.tangential_force
         sf2 = self.belt_params[-1] / self.v
         Fw0 = 1.1 * self.tangential_force
@@ -274,3 +272,35 @@ class FlatBelt(Belt):
         self.centrifugal_stress = self.belt_params[2] * self.v**2
         self.total_stress = self.pull_stress + self.bending_stress + self.centrifugal_stress
         return self.total_stress
+
+
+class VBelt(FlatBelt):
+    def __init__(
+            self,
+            torque: float | int,
+            num_of_rev: float | int,
+            ratio: float | int,
+            app_factor: float | int,
+            belt_type: str
+    ):
+        self.belt_type = belt_type
+        # rotationsgeschwindigkeit der Antriebsseite
+        self.angular_velocity = num_of_rev / 60 * 2 * np.pi
+        # zu übertragende Leistung
+        self.power = torque * self.angular_velocity * app_factor
+        # P / n verhältnis für die Wahl der Raddurchmesser
+        ptn = self.power / 1000 / num_of_rev
+        index = np.where(_TROLLEY_DIAMETER_[0] >= ptn)
+        # Durchmesser des treibenden Rads
+        d1 = _TROLLEY_DIAMETER_[1, index[0]]
+        self.trolley_diameter_drive = d1[0]
+        # Durchmesser des getriebenen Rads
+        d2 = self.trolley_diameter_drive * ratio
+        index = np.where(_TROLLEY_DIAMETER_[1] >= d2)
+        d2_ = _TROLLEY_DIAMETER_[1, index[0]]
+        self.trolley_diameter_load = d2_[0]
+        ratio_ = self.trolley_diameter_load / self.trolley_diameter_drive
+        super().__init__(torque, num_of_rev, ratio_, app_factor)
+
+    def step_3_calc_beltwidth(self, index: int, Ft_zul: float|int):
+        pass
