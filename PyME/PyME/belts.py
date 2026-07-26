@@ -183,6 +183,17 @@ class FlatBelt(Belt):
         app_factor: float|int,
         belt_type: str
     ):
+        """
+        Flachriemen objekt.
+        Wird benutzt um Drehmoment von einer Welle auf eine andere zu übertragen.
+        Kraftübertragung via Reibung an den Rollen.
+
+        :param torque: (float|int) zu übertragendes Drehmoment [Nm]
+        :param num_of_rev: (float|int) Drehzahl der getriebenen Welle [U/min]
+        :param ratio: Übersetzungsverhältnis vom treibenden zum getriebenen Rad [1]
+        :param app_factor: Anwendungsfaktor gemäss RM TB-3 [1]
+        :param belt_type: Riementyp gemäss RM TB-16 ["rubber", "multilayer"]
+        """
         self.belt_type = belt_type
         # rotationsgeschwindigkeit der Antriebsseite
         self.angular_velocity = num_of_rev / 60 * 2 * np.pi
@@ -239,7 +250,13 @@ class FlatBelt(Belt):
         self.x = 0.03 * belt_length
         return self.shaft_distance, self.wrap_angle, self.x
 
-    def step_3_calc_beltwidth(self, index: int, Ft_zul: float|int):
+    def step_3_calc_beltwidth(self, index: int):
+        """
+        Berechne die Riemenbreite b
+
+        :param index: (int) Index korrespondiert zur Zeile in der Riementyp-tabelle
+        :return: Riemenbreite [mm]
+        """
         match self.belt_type.lower():
             case "rubber":
                 self.belt_params = _RUBBER_FLATBELT_PARAMS_[index]
@@ -250,11 +267,18 @@ class FlatBelt(Belt):
         self.kappa = (self.m - 1) / self.m
         self.k = np.sqrt(self.m ** 2 + 1 - 2 * self.m * np.cos(self.wrap_angle)) / (self.m - 1)
         self.tangential_force = self.power / self.v
+        Ft_zul = self.belt_params[6]
         b_ = self.tangential_force / Ft_zul
-        self.belt_width = _FLATBELT_WIDTH_[np.where(_FLATBELT_WIDTH_ <= b_)[-1]]
+        self.belt_width = _FLATBELT_WIDTH_[np.where(_FLATBELT_WIDTH_ >= b_)][0]
         return self.belt_width
 
     def step_4_calc_forces(self, thickness: float|int = 0):
+        """
+        Berechne diverse Kräfte  im Riemen.
+
+        :param thickness: Riemendicke, falls aus Herstellerkatalog gewählt [mm]
+        :return: Zugkraft Fz [N], Wellenkraft Fw [N] und statische Wellenkraft Fw0 [N]
+        """
         if not thickness:
             self.thickness = self.belt_params[4] * self.belt_width
         else:
