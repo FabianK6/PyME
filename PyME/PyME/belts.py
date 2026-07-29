@@ -147,7 +147,7 @@ class ToothBelt(Belt):
         self.P_spez = P_spez
         belt_width_ = self.power/1000 / (self.zk * self.ze * P_spez)
         self.index_b = np.where(_TOOTHBELT_WIDTH_ >= belt_width_)
-        self.belt_width = _TOOTHBELT_WIDTH_[index[0]]
+        self.belt_width = _TOOTHBELT_WIDTH_[self.index[0]]
         return self.belt_width
 
     def step_5_control_calculation(
@@ -290,7 +290,7 @@ class FlatBelt(Belt):
         self.resting_shaft_force = self.shaft_force + self.pullforce
         return self.pullforce, self.shaft_force, self.resting_shaft_force
 
-    def step_6_calc_stress(self):
+    def step_5_control_calculation(self):
         self.pull_stress = self.tangential_force / (self.kappa * self.thickness * self.belt_width)
         self.bending_stress = self.belt_params[1] * self.thickness / self.belt_width
         self.centrifugal_stress = self.belt_params[2] * self.v**2
