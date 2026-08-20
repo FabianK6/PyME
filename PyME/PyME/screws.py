@@ -25,7 +25,7 @@ gewählten Schraube herausgesucht werden. \n
 Danach können die Sicherheiten und das Anzugsdrehmoment der Schraube ermittelt werden sowie ein Spannungsschaubild gezeichnet werden.
 >>> connection.calculation(...) \n
 """
-from .materials import Solid
+from materials import Solid
 import numpy as np
 
 _SCREWCLASSES_ = np.array(["4.6", "8.8", "10.9", "12.9"])

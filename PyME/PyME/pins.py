@@ -7,7 +7,7 @@ Created on Wed May 20 23:15:51 2026
 """
 
 import numpy as np
-from .materials import Solid
+from materials import Solid
 
 
 class Pin(object):

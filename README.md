@@ -11,3 +11,5 @@ Aus den Kapiteln von  Roloff Matek sind die folgenden Berechnungen anwendbar:
 - Gleitlager
 - Wellen und Achsen
 - Wellen- und Nabenverbindungen
+- Kupplungen
+- Riemen- und Kettenzüge

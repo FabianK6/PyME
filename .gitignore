@@ -1,0 +1,44 @@
+# Build and generated files
+build/
+dist/
+out/
+target/
+
+# Logs
+*.log
+logs/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+*~
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Dependency directories
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Coverage and test output
+.coverage
+htmlcov/
+.pytest_cache/
+.coverage.*
+coverage.xml
