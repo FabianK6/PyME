@@ -7,8 +7,8 @@ class BoschProfile(object):
             self, length: float,
             area: float, resistance_x: float,
             resistance_y: float, areaInertia_x: float,
-            areaInertia_y: float, youngModulus: float, Rp02: float,
-            density: float
+            areaInertia_y: float, youngModulus: float,
+            Rp02: float, density: float
     ):
         """
         Bosch-Profile. Verwendung der Parameter aus dem Bosch Rexroth-Katalog.
@@ -80,32 +80,32 @@ class BoschProfile(object):
             match node[1]:
                 case "boundary":
                     bearings.append(
-                        n.set_as_boundarybearing().set_force(node[2][1] * self.K_A, node[2][2] * self.K_A).set_load(
-                            node[2][0] * self.K_A + dF)
+                        n.set_as_boundarybearing().set_force(node[2][1] * K_A, node[2][2] * K_A).set_load(
+                            node[2][0] * K_A + dF)
                     )
                 case "mid":
                     bearings.append(
-                        n.set_as_midbearing().set_force(node[2][1] * self.K_A, node[2][2] * self.K_A).set_load(
-                            node[2][0] * self.K_A + dF)
+                        n.set_as_midbearing().set_force(node[2][1] * K_A, node[2][2] * K_A).set_load(
+                            node[2][0] * K_A + dF)
                     )
                 case "loose":
                     bearings.append(
-                        n.set_as_loose().set_force(node[2][1] * self.K_A, node[2][2] * self.K_A).set_load(
-                            node[2][0] * self.K_A + dF)
+                        n.set_as_loose().set_force(node[2][1] * K_A, node[2][2] * K_A).set_load(
+                            node[2][0] * K_A + dF)
                     )
                 case "rigid":
                     bearings.append(
-                        n.set_as_rigid().set_force(node[2][1] * self.K_A, node[2][2] * self.K_A).set_load(
-                            node[2][0] * self.K_A + dF)
+                        n.set_as_rigid().set_force(node[2][1] * K_A, node[2][2] * K_A).set_load(
+                            node[2][0] * K_A + dF)
                     )
                 case "glider":
                     bearings.append(
-                        n.set_as_glider().set_force(node[2][1] * self.K_A, node[2][2] * self.K_A).set_load(
-                            node[2][0] * self.K_A + dF)
+                        n.set_as_glider().set_force(node[2][1] * K_A, node[2][2] * K_A).set_load(
+                            node[2][0] * K_A + dF)
                     )
                 case "load":
                     bearings.append(
-                        n.set_force(node[2][1] * self.K_A, node[2][2] * self.K_A).set_load(node[2][0] * self.K_A + dF)
+                        n.set_force(node[2][1] * K_A, node[2][2] * K_A).set_load(node[2][0] * K_A + dF)
                     )
 
         elements = []
