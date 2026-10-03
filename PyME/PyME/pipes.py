@@ -72,4 +72,3 @@ class Pipe(object):
             case "smooth":
                 roughness = 0.309 / np.log(Re / 7) ** 2
         return rho * w**2 / 2 * (self.b + roughness * self.L / self.di)
-
