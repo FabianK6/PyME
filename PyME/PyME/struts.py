@@ -155,8 +155,7 @@ class Alu40x40L(BoschProfile):
             length=length, area=5.6e2,
             resistance_x=4.5e3, resistance_y=4.5e3,
             areaInertia_x=9.1e4, areaInertia_y=9.1e4,
-            youngModulus=70000, Rp02=195, density=2700
-        )
+            youngModulus=70000, Rp02=195, density=2700)
 
 
 class Alu40x80L(BoschProfile):
@@ -183,4 +182,49 @@ class Alu80x80L(BoschProfile):
             length, area=18.2e2,
             resistance_x=33e3, resistance_y=33e3,
             areaInertia_x=132.1e4, areaInertia_y=132.1e4,
+            youngModulus=70000, Rp02=195, density=2700)
+
+
+class Alu40x120L(BoschProfile):
+    def __init__(self, length: float):
+        super().__init__(
+            length, area=15.5e2,
+            resistance_x=33.9e3, resistance_y=13.9e3,
+            areaInertia_x=203.2e4, areaInertia_y=27.8e4,
+            youngModulus=70000, Rp02=195, density=2700)
+
+
+class Alu40x160L(BoschProfile):
+    def __init__(self, length: float):
+        super().__init__(
+            length, area=20.5e2,
+            resistance_x=58.3e3, resistance_y=18.6e3,
+            areaInertia_x=466.7e4, areaInertia_y=37.2e4,
+            youngModulus=70000, Rp02=195, density=2700)
+
+
+class Alu40x120x120L(BoschProfile):
+    def __init__(self, length: float):
+        super().__init__(
+            length, area=24.6e2,
+            resistance_x=42.2e3, resistance_y=42.2e3,
+            areaInertia_x=318.0e4, areaInertia_y=318.0e4,
+            youngModulus=70000, Rp02=195, density=2700)
+
+
+class Alu80x120L(BoschProfile):
+    def __init__(self, length: float):
+        super().__init__(
+            length, area=25.6e2,
+            resistance_x=64.9e3, resistance_y=48.2e3,
+            areaInertia_x=389.2e4, areaInertia_y=192.8e4,
+            youngModulus=70000, Rp02=195, density=2700)
+
+
+class Alu80x160L(BoschProfile):
+    def __init__(self, length: float):
+        super().__init__(
+            length, area=32.9e2,
+            resistance_x=106.3e3, resistance_y=63.4e3,
+            areaInertia_x=850.7e4, areaInertia_y=253.4e4,
             youngModulus=70000, Rp02=195, density=2700)
