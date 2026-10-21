@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def _f(x, nd=0):
     """Zahl (oder Array) für den LaTeX-Mathmodus formatieren, Dünnraum als Tausendertrenner."""
     if np.ndim(x) > 0:
