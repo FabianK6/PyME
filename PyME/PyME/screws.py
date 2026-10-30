@@ -5,29 +5,29 @@ Created on Mon May 18 23:20:11 2026
 
 @author: fabian
 
-Berechne eine Schraubenverbindung gemäss Roloff Matek Kapitel 8. \n
-Eine Verbindung zwischen zwei Werkstücken durch Schrauben wird in drei Schritten ausgeführt: \n
-Es muss eine provisorische Instanz eines Schrauben-Objekts erstellt werden. \n
->>> screw = Screw(...) \n
-Danach kann mit der entsprechenden Methode ein mindest-Spannungsquerschnitt der Schraube berechnet werden. \n
->>> screw.provisorial_dimension(...) \n
-Hat man eine Schraube gewählt, muss diese als neues Objekt instanziert werden. \n
->>> new_screw = Screw(...)
-Nun kann eine Schraube mit einem Spannungsquerschnitt gewählt werden, der mindestens so gross ist, wie berechnet. \n
-Quellen dazu sind Herstellerkataloge, Tabellenbücher und der Normenauszug. \n
-Nun kann die Instanz der Schraubenverbindung erstellt werden. \n
->>> connection = ScrewConnection(...) \n
-Nun kann nun die Methode zur Berechnung aufgerufen werden. \n
+Berechne eine Schraubenverbindung gemäss Roloff Matek Kapitel 8.
+Eine Verbindung zwischen zwei Werkstücken durch Schrauben wird in drei Schritten ausgeführt:
+Es muss eine provisorische Instanz eines Schrauben-Objekts erstellt werden.
+screw = Screw(...)
+Danach kann mit der entsprechenden Methode ein mindest-Spannungsquerschnitt der Schraube berechnet werden.
+screw.provisorial_dimension(...)
+Hat man eine Schraube gewählt, muss diese als neues Objekt instanziert werden.
+new_screw = Screw(...)
+Nun kann eine Schraube mit einem Spannungsquerschnitt gewählt werden, der mindestens so gross ist, wie berechnet.
+Quellen dazu sind Herstellerkataloge, Tabellenbücher und der Normenauszug.
+Nun kann die Instanz der Schraubenverbindung erstellt werden.
+connection = ScrewConnection(...)
+Nun kann nun die Methode zur Berechnung aufgerufen werden.
 Hier wird in einem ersten Schritt die Längenänderungen berechnet und eine benötigte Schraubenkraft ermittelt.
->>> connection.precalculation(...)
+connection.precalculation(...)
 Damit kann nun aus den Katalogdaten wiederum eine passende Schraube neu gewählt oder die maximale Schraubenkraft der bereits
-gewählten Schraube herausgesucht werden. \n
+gewählten Schraube herausgesucht werden.
 Danach können die Sicherheiten und das Anzugsdrehmoment der Schraube ermittelt werden sowie ein Spannungsschaubild gezeichnet werden.
->>> connection.calculation(...) \n
+connection.calculation(...)
 """
-from materials import Solid
+from .materials import Solid
 import numpy as np
-from misc import _e, _f
+from .misc import _e, _f
 
 
 _SCREWCLASSES_ = np.array(["4.6", "8.8", "10.9", "12.9"])

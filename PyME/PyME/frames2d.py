@@ -81,13 +81,9 @@ Beispiel 2: Fachwerk (alle Stäbe gelenkig, nur Normalkräfte)
     Kontrolliert mit dem Knotengleichgewicht von Hand (Abweichung < 1e-9 N).
 """
 import numpy as np
+from .misc import _g
 
 _GX, _GW = np.polynomial.legendre.leggauss(5)       # Gauss-Punkte für die äquivalenten Knotenlasten
-
-
-def _g(x, nd=6):
-    """Zahl für Berichte auf nd signifikante Stellen formatieren (ohne unnötige Nullen)."""
-    return f"{x:.{nd}g}"
 
 
 class Node(object):

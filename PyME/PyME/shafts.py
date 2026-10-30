@@ -8,7 +8,7 @@ Created on Wed May 20 22:27:04 2026
 
 import numpy as np
 import bending as bd
-from materials import Solid
+from .materials import Solid
 
 
 class SlotStone(object):

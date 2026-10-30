@@ -16,3 +16,8 @@ def _e(x, nd=3):
 
 def _ok(cond) -> str:
     return "✔" if cond else "✘"
+
+
+def _g(x, nd=6):
+    """Zahl für Berichte auf nd signifikante Stellen formatieren (ohne unnötige Nullen)."""
+    return f"{x:.{nd}g}"

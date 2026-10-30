@@ -7,7 +7,7 @@ Created on Wed May 20 23:07:52 2026
 """
 
 import numpy as np
-from  misc import _e, _f
+from  .misc import _e, _f
 
 
 class Bearing(object):
