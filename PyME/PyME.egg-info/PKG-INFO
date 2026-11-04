@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: PyME
+Version: 0.1.0
+Summary: Calculation of Machine elements according to Roloff Matek
+Author: Fabian Koch
+Requires-Python: >=3.12
+Requires-Dist: matplotlib>=3.10.9
+Requires-Dist: numpy>=2.4.4
+Requires-Dist: sympy>=1.14.0
+Dynamic: author
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
