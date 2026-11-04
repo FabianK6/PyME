@@ -11,14 +11,14 @@ Kerbstifte: 0,8-fache Werte für sigma_b,zul und tau_a,zul, 0,7-fache für p_zul
 Der Anwendungsfaktor K_A (TB 3-4c) wird auf die Belastung angewendet.
 
 Ablauf:
->>> pin = Pin(diameter=8, pinLength=22, insertionDept=12, material=steel, notched=True)
->>> conn = PinConnection(pin, part1=[12, 200], part2=[10, 400], num_of_pins=1)
->>> conn.calc_lateral_force(K_A=1.0, force=300, loadCase="pulsating")
->>> display(Markdown(conn.markdown()))
+pin = Pin(diameter=8, pinLength=22, insertionDept=12, material=steel, notched=True)
+conn = PinConnection(pin, part1=[12, 200], part2=[10, 400], num_of_pins=1)
+conn.calc_lateral_force(K_A=1.0, force=300, loadCase="pulsating")
+display(Markdown(conn.markdown()))
 """
 import numpy as np
-from materials import Solid
-from misc import _f
+from .materials import Solid
+from .misc import _f
 
 # Faktoren auf R_m (Gl. 9.1 bis 9.4)
 _LOADCASES_ = {
